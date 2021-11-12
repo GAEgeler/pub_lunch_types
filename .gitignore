@@ -22,19 +22,6 @@
 
 
 # ignore subequent folders
+/output
 
-/raw data
-/clean data
-/augmented data
-/files
-/analysen
-/archive
-/plots
-/papers
-/survey meat
-/publications
-/scripts from another project
-/fonts
-/weather_food
-/export_zenodo
 .Rproj.user

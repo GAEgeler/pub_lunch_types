@@ -12,7 +12,8 @@
 
 # ignore all files ending with
 # do not update selected files
-
+*.Rbuildignore
+*.Rprofile
 *.Rproj.user
 *.Rhistory
 *.RData
@@ -24,4 +25,3 @@
 # ignore subequent folders
 /output
 
-.Rproj.user

@@ -12,7 +12,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 #load config file
 source("R/01_config_file_211112.R") #for paths
-source("R/01_plot_theme_211112.R")
+source("R/01_plot_theme_211112.R") # config for plots
+source("R/01_plot_functions_211112.R") #some functions for plots
 
 
 #load required packages
@@ -30,7 +31,7 @@ sell_dat_2017 <- readr::read_delim("https://zenodo.org/record/3890949/files/2017
 # prepare data: verpflegungstyp
 df <- sell_dat_2017 %>% 
   #count fish and chicken meals to the meat meals
-  mutate(label_content = str_replace(label_content, "Fisch|Geflügel", "Fleisch")) %>%
+  mutate(label_content = stringr::str_replace(label_content, "Fisch|Geflügel", "Fleisch")) %>%
   select(ccrs, label_content, gender, member, age_group) %>% # select variable of interest
   filter(member != "Spezialkarten") %>% # exclude spezialkarten # 6 Person
   #alteratively: https://community.rstudio.com/t/tidyverse-alternative-to-reshape2-dcast/12692
@@ -118,7 +119,7 @@ reg_visitors <- bind_rows(buffet,
 ```
 
 
-```{r plot food_types}
+```{r plot food_types, eval=FALSE}
 #TODO: change order and delete label guide, and change label color
 
 #prepare data
@@ -185,7 +186,6 @@ psych::describe(reg_visitors$tot_buy)
 
 ```{r food_type and gender}
 
-
 # prepare data pro gender
 visiter <- reg_visitors %>% 
     group_by(gender, food_type) %>% 
@@ -211,7 +211,6 @@ dat <- reg_visitors %>%
   bind_rows(visiter)
 
 
-
 #source theme r-file
 # takes every label and their belonged color
 dat$label_color <- as.factor(sapply(unlist(ColsPerCat)[dat$food_type], 
@@ -233,7 +232,7 @@ p <- ggplot(dat, aes(x = factor(xlab, levels = c("Men\nn = 587",
                       limits = attributes(ColsPerCat)$name,
                       values = ColsPerCat,
                       labels = NamesPerCat$plot_names) +
-  scale_color_manual(values = levels(visiter_all$label_color)) +
+  scale_color_manual(values = levels(dat$label_color)) +
   guides(fill = guide_legend("", nrow = 1, reverse = F),
            color = "none") +
   scale_y_origin(labels=scales::percent_format(accuracy = 1L)) +
@@ -243,17 +242,27 @@ p <- ggplot(dat, aes(x = factor(xlab, levels = c("Men\nn = 587",
   geom_text(aes(label = ifelse(pct<.02,"", scales::percent(round(pct, 2), 
                                                              accuracy = 1L))),
               position = position_stack(vjust = .5, reverse = TRUE), 
-            size = 22 * converter) +
-  mytheme +
-  theme(legend.position = "bottom", strip.background =element_rect(fill="grey95"))
+            size = 22 * converter, 
+            fontface = "bold") +
+  mytheme_facet 
 
+#save as pdf
 ggsave(filename = paste0(wd_plots, "/food_type_gender_", format(Sys.Date(), 
                                                                 "%y%m%d") 
                          ,".pdf"), p, 
-       height = 4,
-       width = 22,
+       height = 6,
+       width = 18,
        dpi = 300,
        device = cairo_pdf) 
+
+#export as png
+ggsave(filename = paste0(wd_plots, "/food_type_gender_", format(Sys.Date(), 
+                                                                "%y%m%d") 
+                         ,".png"), p, 
+       height = 6,
+       width = 18,
+       dpi = 300,
+       device = png) 
 
 
 ```
@@ -319,10 +328,11 @@ p <- ggplot(dat, aes(y = pct_gender,
   geom_text(aes(label=ifelse(pct_gender<0.02,"", 
                              scales::percent(round(pct_gender, 2),
                                              accuracy = 1))), 
-            size = 22 * converter, position = position_stack(vjust = 0.5, reverse = TRUE)) + 
+            size = 22 * converter, 
+            position = position_stack(vjust = 0.5, reverse = TRUE),
+            fontface = "bold") + 
   scale_color_manual(values = levels(dat$label_color)) +
-  mytheme_facet +
-  theme(legend.position = "bottom")
+  mytheme_facet 
    
 ggsave(filename = paste0(wd_plots, "/food_type_age_group_", format(Sys.Date(),
                                                                    "%y%m%d") ,
@@ -333,9 +343,19 @@ ggsave(filename = paste0(wd_plots, "/food_type_age_group_", format(Sys.Date(),
        dpi = 300,
        device = cairo_pdf)
 
+#export as png
+ggsave(filename = paste0(wd_plots, "/food_type_age_group_", format(Sys.Date(),
+                                                                   "%y%m%d") ,
+                         ".png"),
+       p, 
+       height = 11,
+       width = 22,
+       dpi = 300,
+       device = png)
+
 ```
 
-```{r food_type and member}
+```{r food_type and affiliation}
 
 # prepare data
 dat <- reg_visitors %>% 
@@ -357,6 +377,33 @@ dat %<>%
                               .$gender == "M" ~ "Men")) %>% 
     mutate(xlab_ = paste("(", tot_member, ")",sep = ""),
            xlab = paste(gender, xlab_, sep = "\n"))
+
+
+#do some stats
+dat %>% 
+  split(.$food_type) -> dflist #split into different list
+
+df_empty <- tibble()
+
+#loop trough that list
+for (i in 1:length(dflist)) {
+  #subset
+  df_empty <- dflist[[i]]
+  
+  #extract stats
+  df_empty %>% group_by(gender, member) %>% 
+    summarise(tot = sum(tot_cluster),
+              pct_check = sum(pct_member)) %>%
+    mutate(pct = tot / sum(tot)) %>% 
+    mutate(type = attributes(dflist)$names[i]) -> df
+  
+  #save back into dataframe, im getting some errors
+  dat <- bind_rows(df_empty, df)
+  
+  return(dat) 
+  
+}
+
 
 
 # detects dark color: for labelling the bars
@@ -388,27 +435,36 @@ p <- ggplot(dat, aes(y = pct_member,
     geom_text(aes(label=ifelse(pct_member<0.02,"", 
                                scales::percent(round(pct_member, 2), accuracy = 1))),
               size = 22 * converter, 
-              position = position_stack(vjust = 0.5, reverse = TRUE)) +
+              position = position_stack(vjust = 0.5, reverse = TRUE),
+              fontface = "bold") +
     scale_color_manual(values = levels(dat$label_color)) +
-    mytheme_facet +
-    theme(legend.position = "bottom")
+    mytheme_facet 
 
 
 ggsave(filename = paste0(wd_plots, "/food_type_affiliation_",
                          format(Sys.Date(), "%y%m%d"),
                          ".pdf"),
        p,
-       height = 5,
-       width = 22,
+       height = 6.5,
+       width = 18,
        dpi = 300,
        device = cairo_pdf)
+
+#export as png
+ggsave(filename = paste0(wd_plots, "/food_type_affiliation_",
+                         format(Sys.Date(), "%y%m%d"),
+                         ".png"),
+       p,
+       height = 6.5,
+       width = 18,
+       dpi = 300,
+       device = png)
 
 ```
 
 
 ```{r food_type and experiment}
-#TODO: change order of xaxis - for double axis => probably with interaction
-#TODO: delete some of the items in the legends
+#TODO: text color is not working, not sure why - all the same as above!!
 
 # buffetarians and never meat go together; meat_lovers and alwys_meat too 
 buffet_no_meat <- bind_rows(buffet, never_meat)
@@ -480,28 +536,24 @@ for (i in 1:length(dfList)) {
                   color = label_color) + 
     geom_bar(stat = "identity", position = position_stack(reverse = FALSE),
                  color = NA) + 
-    
+    scale_fill_manual(values = Cols, 
+                      breaks = attributes(Cols)$name) +
+    coord_flip() +
     facet_wrap(~gender, ncol = 1, scales = "free_y", 
                    strip.position = "left", 
              drop = TRUE) +
-    coord_flip() + 
+     geom_text(aes(label=ifelse(pct < 0.022,"", 
+                                   scales::percent(round(pct, 2), accuracy = 1))),
+              size = 22 * converter, 
+              position = position_stack(vjust = 0.5),
+              fontface = "bold") +
+    scale_color_manual(values = levels(pl$label_color)) +
     xlab("") +
     ylab("\nMeals sold in percent\n")+
     guides(fill = guide_legend("", nrow = 1, reverse = TRUE),
                color = "none")+
     scale_y_origin(labels=scales::percent_format(accuracy = 1L)) +
-    scale_fill_manual(values = Cols) +
-    # scale_x_discrete(limits = rev) + # reverse x-axis
-    facet_wrap(~gender, ncol = 1, scales = "free_y", 
-                   strip.position = "left", 
-             drop = TRUE) +
-    scale_color_manual(values = levels(pl$label_color)) +
-    geom_text(aes(label=ifelse(pct < 0.022,"", 
-                                   scales::percent(round(pct, 2), accuracy = 1))),
-                  size = 22 * converter, 
-                  position = position_stack(vjust = 0.5)) + 
-    mytheme_facet +
-    theme(legend.position = "bottom")
+    mytheme_facet
         
     
     ggsave(path = wd_plots, 
@@ -511,9 +563,20 @@ for (i in 1:length(dfList)) {
                              , "_experiment",
                              ".pdf"),
            height = 6,
-           width = 22,
+           width = 18,
            dpi = 300,
            device = cairo_pdf)
+    
+    ggsave(path = wd_plots, 
+           p,
+           filename = paste0("2021_", stringr::str_replace(dfList[[i]]$food_type[1], 
+                                                          " |-", "_")
+                             , "_experiment",
+                             ".png"),
+           height = 6,
+           width = 18,
+           dpi = 300,
+           device = png)
     
     message(stringr::str_replace(dfList[[i]]$food_type[1], " ", "_"), " printed!")
 }
@@ -522,7 +585,7 @@ for (i in 1:length(dfList)) {
 ```
 
 
-```{r another approach for food_type and experiment}
+```{r another approach for food_type and experiment, eval=FALSE}
 # buffetarians and never meat go together; meat_lovers and alwys_meat too 
 visiter <- reg_visitors %>%
   mutate(food_type = stringr::str_replace(food_type, "buffet|never meat",
@@ -607,7 +670,7 @@ Cols = c("Unknown" = "black","Vegan" = "#80ccff", "Vegetarian" = "#c5b87c", "Fis
            width = w_15,
            height = h_15,
            dpi = 300,
-           device = cairo_pdf) # figure 19-23
+           device = cairo_pdf) 
     
     message(paste(dat$check[1]), " printed!")
 }

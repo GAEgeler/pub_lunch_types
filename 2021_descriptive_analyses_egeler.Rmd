@@ -45,6 +45,7 @@ df <- sell_dat_2017 %>%
 
 ```
 
+## Define food tpyes (lunch)
 
 ```{r define food types}
 # pre defined groups (one timers, some timers, buffetarians, canteen eaters 
@@ -120,6 +121,7 @@ reg_visitors <- bind_rows(buffet,
 
 
 ```{r plot food_types, eval=FALSE}
+#NOTE: is not ready jet, for appendix
 #TODO: change order and delete label guide, and change label color
 
 #prepare data
@@ -171,6 +173,8 @@ ggplot(dat, aes(area = count, fill = label, label = label))+
 
 ```
 
+
+## Food types by sex, affiliation and age_groups
 ```{r some stats about the food_types, eval=FALSE}
 # describe clusters 
 aggregate(gender ~ food_type, data = reg_visitors, FUN = gmodels::CrossTable)
@@ -183,10 +187,11 @@ aggregate(tot_buy ~ food_type, data = reg_visitors,
 psych::describe(reg_visitors$tot_buy)
 ```
 
+### Foody types by sex
 
-```{r food_type and gender}
+```{r food_type and sex}
 
-# prepare data pro gender
+# prepare data pro sex
 visiter <- reg_visitors %>% 
     group_by(gender, food_type) %>% 
     summarise(visit_counts=n()) %>% 
@@ -198,7 +203,7 @@ visiter <- reg_visitors %>%
            xlab_1 = paste0("n = ", sum_gender),
            xlab = paste(xlab_, xlab_1, sep = "\n"))
     
-# prepare data overall: exclude one case with missing gender
+# prepare data overall: exclude one case with missing sex
 dat <- reg_visitors %>% 
   group_by(food_type) %>% 
   summarise(visit_counts=n()) %>% 
@@ -209,6 +214,23 @@ dat <- reg_visitors %>%
          xlab_1 = paste0("n = ", sum_all),
          xlab = paste(xlab_, xlab_1, sep = "\n")) %>% 
   bind_rows(visiter)
+
+# some stats
+# share of sex
+visiter %>% 
+  group_by(gender) %>% 
+  summarise(tot = sum(visit_counts)) %>% 
+  mutate(pct = tot / sum(tot)) %>% 
+  ungroup()
+
+# share of vegi-oriented vs. meat-oriented
+visiter %>% 
+  mutate(type = case_when(food_type == "buffet" | food_type == "never meat" | food_type == "veg-flexitarian" | food_type == "meat-flexitarian" ~ "vegi", TRUE ~ "meat")) %>% 
+  group_by(gender, type) %>% 
+  summarise(tot = sum(visit_counts)) %>% 
+  mutate(pct = tot / sum(tot)) %>% 
+  ungroup()
+
 
 
 #source theme r-file
@@ -247,7 +269,7 @@ p <- ggplot(dat, aes(x = factor(xlab, levels = c("Men\nn = 587",
   mytheme_facet 
 
 #save as pdf
-ggsave(filename = paste0(wd_plots, "/food_type_gender_", format(Sys.Date(), 
+ggsave(filename = paste0(wd_plots, "/food_type_sex_", format(Sys.Date(), 
                                                                 "%y%m%d") 
                          ,".pdf"), p, 
        height = 6,
@@ -256,10 +278,51 @@ ggsave(filename = paste0(wd_plots, "/food_type_gender_", format(Sys.Date(),
        device = cairo_pdf) 
 
 #export as png
-ggsave(filename = paste0(wd_plots, "/food_type_gender_", format(Sys.Date(), 
+ggsave(filename = paste0(wd_plots, "/food_type_sex_", format(Sys.Date(), 
                                                                 "%y%m%d") 
                          ,".png"), p, 
-       height = 6,
+       height = 4,
+       width = 18,
+       dpi = 300,
+       device = png) 
+
+#different colors
+p2 <- ggplot(dat, aes(x = factor(xlab, levels = c("Men\nn = 587", 
+                                                 "Women\nn = 403",
+                                                 "All\nn = 990")), 
+                     y = pct, 
+                     fill = factor(food_type, 
+                                            levels = NamesPerCat$food_type), 
+                     color = label_color)) +
+  # reverse = T due to coord_flip, see https://stackoverflow.com/questions/42710056/reverse-stacked-bar-order
+  geom_bar(stat = "identity", colour = NA, 
+           position = position_stack(reverse = TRUE),
+           width = .7) + 
+  scale_fill_manual(breaks = attributes(ColsPerCat_blind)$name,
+                      limits = attributes(ColsPerCat_blind)$name,
+                      values = ColsPerCat_blind,
+                      labels = NamesPerCat$plot_names) +
+  scale_color_manual(values = levels(dat$label_color)) +
+  guides(fill = guide_legend("", nrow = 1, reverse = F),
+           color = "none") +
+  scale_y_origin(labels=scales::percent_format(accuracy = 1L)) +
+  coord_flip() +
+  xlab("") +
+  ylab("\nShare of food type\n") +
+  geom_text(aes(label = ifelse(pct<.02,"", scales::percent(round(pct, 2), 
+                                                             accuracy = 1L))),
+              position = position_stack(vjust = .5, reverse = TRUE), 
+            size = 22 * converter, 
+            fontface = "bold") +
+  mytheme_facet 
+
+
+#export as png
+ggsave(filename = paste0(wd_plots, "/food_type_sex_colblind_", format(Sys.Date(), 
+                                                                "%y%m%d") 
+                         ,".png"), 
+       plot = p2, 
+       height = 5,
        width = 18,
        dpi = 300,
        device = png) 
@@ -267,6 +330,8 @@ ggsave(filename = paste0(wd_plots, "/food_type_gender_", format(Sys.Date(),
 
 ```
 
+
+### Foody types by sex and age
 
 ```{r food_type and age}
 
@@ -299,6 +364,30 @@ dat %<>%
     
 
 
+# stats veg vs. meat types
+dat %>% 
+    mutate(type = case_when(food_type == "buffet" | food_type == "never meat" | food_type == "veg-flexitarian" | food_type == "meat-flexitarian" ~ "vegi", TRUE ~ "meat")) %>% 
+  group_by(gender, age_group, type) %>% 
+  summarise(tot = sum(tot_cluster)) %>% 
+  mutate(pct = tot / sum(tot)) %>% 
+  ungroup() -> df 
+
+#stats meat: female vs. male (overall)
+df %>%
+  filter(type == "meat") %>% 
+  group_by(gender) %>% 
+  summarise(tot = sum(tot)) %>% 
+  mutate(pct = tot / sum(tot)) %>% 
+  ungroup()
+
+#stats age_group
+dat %>% 
+  group_by(age_group) %>% 
+  summarise(tot = sum(tot_cluster)) %>% 
+  mutate(pct = tot / sum(tot)) %>% 
+  ungroup()
+
+###plot--------
 
 # detects dark color: for labelling the bars
 dat$label_color <- as.factor(sapply(unlist(ColsPerCat)[dat$food_type], 
@@ -355,6 +444,9 @@ ggsave(filename = paste0(wd_plots, "/food_type_age_group_", format(Sys.Date(),
 
 ```
 
+
+### Foody types by sex and affiliation
+
 ```{r food_type and affiliation}
 
 # prepare data
@@ -383,29 +475,57 @@ dat %<>%
 dat %>% 
   split(.$food_type) -> dflist #split into different list
 
-df_empty <- tibble()
+df_empty <- list()
 
 #loop trough that list
 for (i in 1:length(dflist)) {
   #subset
-  df_empty <- dflist[[i]]
+  df <- dflist[[i]]
   
   #extract stats
-  df_empty %>% group_by(gender, member) %>% 
-    summarise(tot = sum(tot_cluster),
+  df %>% 
+    mutate(type = case_when(food_type == "buffet" | food_type == "never meat" | food_type == "veg-flexitarian" | food_type == "meat-flexitarian" ~ "vegi", TRUE ~ "meat")) %>% 
+  group_by(gender, member) %>% 
+  summarise(tot = sum(tot_cluster),
               pct_check = sum(pct_member)) %>%
-    mutate(pct = tot / sum(tot)) %>% 
-    mutate(type = attributes(dflist)$names[i]) -> df
+  mutate(pct = tot / sum(tot)) %>% 
+  mutate(source = attributes(dflist)$names[i]) -> df_stat
   
   #save back into dataframe, im getting some errors
-  dat <- bind_rows(df_empty, df)
+  df_empty[[i]] <- df_stat
   
-  return(dat) 
+  
   
 }
 
+# append data
+data_stats = do.call(bind_rows, df_empty)
 
 
+# stats veg vs. meat types
+dat %>% 
+    mutate(type = case_when(food_type == "buffet" | food_type == "never meat" | food_type == "veg-flexitarian" | food_type == "meat-flexitarian" ~ "vegi", TRUE ~ "meat")) %>% 
+  group_by(gender, member, type) %>% 
+  summarise(tot = sum(tot_cluster)) %>% 
+  mutate(pct = tot / sum(tot)) %>% 
+  ungroup()
+
+#stats flexitarian female vs. male
+dat %>% 
+    filter(stringr::str_detect(food_type, "veg-flexitarian|meat-flexitarian")) %>%  
+  group_by(member, gender) %>% 
+  summarise(tot = sum(tot_cluster)) %>% 
+  mutate(pct = tot / sum(tot)) %>% 
+  ungroup()
+
+#stats sex and affiliation
+dat %>% 
+  group_by(member, gender) %>% 
+  summarise(tot = sum(tot_cluster)) %>% 
+  mutate(pct = tot / sum(tot)) %>% 
+  ungroup()
+
+###plot----
 # detects dark color: for labelling the bars
 dat$label_color <- as.factor(sapply(unlist(ColsPerCat)[dat$food_type], 
                                    function(color) { if (isDark(color)) 'white'
@@ -462,6 +582,7 @@ ggsave(filename = paste0(wd_plots, "/food_type_affiliation_",
 
 ```
 
+### Food type and intervention
 
 ```{r food_type and experiment}
 #TODO: text color is not working, not sure why - all the same as above!!
@@ -470,7 +591,22 @@ ggsave(filename = paste0(wd_plots, "/food_type_affiliation_",
 buffet_no_meat <- bind_rows(buffet, never_meat)
 meat_lovers_alwy_meat <- bind_rows(meat_lovers, alwy_meat)
 
-# plot all verpflegungstyp
+# do some stats
+bind_rows(buffet_no_meat, veg_flex, meat_flex, meat_eat, meat_lovers_alwy_meat) -> df
+
+#group data
+sell_dat_2017 %>% 
+  filter(ccrs %in% df$ccrs) %>%
+  filter(member != "Spezialkarten") %>% 
+  left_join(., df[, c("ccrs", "food_type")], by = "ccrs") %>% 
+  group_by(food_type) %>% 
+  summarise(tot = n()) %>% 
+  mutate(pct = tot / sum(tot)) %>% 
+  arrange(desc(pct))
+  
+
+
+##plot all-----
 dfList <- list(buffet_no_meat, veg_flex, meat_flex, meat_eat, meat_lovers_alwy_meat)
 
 # loop though that list
@@ -487,6 +623,7 @@ for (i in 1:length(dfList)) {
                                 "Vegetarisch" = "Vegetarian",
                                 "Pflanzlich+" = "Vegan",
                                 "Pflanzlich" = "Vegan",
+                                "Hot and Cold" = "Hot&Cold (buffet)",
                                 .missing = "Unknown")) %>% 
     mutate(condit = recode(condit,
                          "Basis" = "Base",
@@ -520,42 +657,67 @@ for (i in 1:length(dfList)) {
          "Vegetarian" = "#c5b87c", 
          "Fish" = "#6619e6", 
          "Meat" = "#fad60d", 
-         "Hot and Cold" = "#4c4848")
+         "Hot&Cold (buffet)" = "#4c4848")
     
   # detects dark color: for labelling the bars
   pl$label_color <- as.factor(sapply(unlist(Cols)[pl$label_content], 
                                        function(color) { if (isDark(color))
                                          'white' else 'black' })) 
     
-    
   #plot
-  p <- ggplot(pl, 
-              aes(y = pct, 
-                  x = xlab,
-                  fill = factor(label_content, levels = attributes(Cols)$name)), 
-                  color = label_color) + 
-    geom_bar(stat = "identity", position = position_stack(reverse = FALSE),
-                 color = NA) + 
-    scale_fill_manual(values = Cols, 
-                      breaks = attributes(Cols)$name) +
-    coord_flip() +
-    facet_wrap(~gender, ncol = 1, scales = "free_y", 
-                   strip.position = "left", 
-             drop = TRUE) +
-     geom_text(aes(label=ifelse(pct < 0.022,"", 
-                                   scales::percent(round(pct, 2), accuracy = 1))),
-              size = 22 * converter, 
-              position = position_stack(vjust = 0.5),
-              fontface = "bold") +
-    scale_color_manual(values = levels(pl$label_color)) +
+  p <- ggplot(data = pl,
+            aes(x = xlab,
+                y = pct,
+                fill = factor(label_content,
+                              levels = attributes(Cols)$names),
+                color = label_color)) + 
+    geom_bar(stat = "identity", position = position_stack(), color = NA, width = .7) + # set color NA otherwise error occurs
     xlab("") +
-    ylab("\nMeals sold in percent\n")+
-    guides(fill = guide_legend("", nrow = 1, reverse = TRUE),
-               color = "none")+
-    scale_y_origin(labels=scales::percent_format(accuracy = 1L)) +
-    mytheme_facet
-        
+    ylab("\nShare in sold dishes\n")+
+    guides(fill = guide_legend("", reverse = T, nrow = 1), 
+           color = "none")+
+    scale_y_origin(labels=scales::percent)+
+    scale_fill_manual(values = Cols,
+                      breaks = attributes(Cols)$name)+
+    scale_color_manual(values = levels(pl$label_color)) +
+    geom_text(aes(label=ifelse(pct > .015, scales::percent(round(pct, 2), accuracy = 1), "")),
+              size = 22*converter,
+              position = position_stack(vjust = 0.52))+
+  coord_flip() +
+  facet_wrap(~gender, ncol = 1, scales = "free_y", 
+             strip.position = "left", 
+             drop = TRUE) +
+  mytheme_facet 
+
     
+  #why is this code not working???--------
+  # p <- ggplot(pl, 
+  #             aes(y = pct, 
+  #                 x = xlab,
+  #                 fill = factor(label_content, levels = attributes(Cols)$name)), 
+  #                 color = label_color) + 
+  #   geom_bar(stat = "identity", position = position_stack(reverse = FALSE),
+  #                color = NA) + 
+  #   scale_fill_manual(values = Cols, 
+  #                     breaks = attributes(Cols)$name) +
+  #   coord_flip() +
+  #   facet_wrap(~gender, ncol = 1, scales = "free_y", 
+  #                  strip.position = "left", 
+  #            drop = TRUE) +
+  #    geom_text(aes(label=ifelse(pct < 0.022,"", 
+  #                                  scales::percent(round(pct, 2), accuracy = 1))),
+  #             size = 22 * converter, 
+  #             position = position_stack(vjust = 0.5),
+  #             fontface = "bold") +
+  #   scale_color_manual(values = levels(pl$label_color)) +
+  #   xlab("") +
+  #   ylab("\nMeals sold in percent\n")+
+  #   guides(fill = guide_legend("", nrow = 1, reverse = TRUE),
+  #              color = "none")+
+  #   scale_y_origin(labels=scales::percent_format(accuracy = 1L)) +
+  #   mytheme_facet
+        
+    #save plot---------
     ggsave(path = wd_plots, 
            p,
            filename = paste0("2021_", stringr::str_replace(dfList[[i]]$food_type[1], 
@@ -584,6 +746,119 @@ for (i in 1:length(dfList)) {
 
 ```
 
+### total sellings by sex and intervention
+
+```{r}
+
+##TODO: xlabs is not working
+
+# prepare data
+sell_dat <- sell_dat_2017 %>%
+    mutate(label_content = stringr::str_replace(label_content, "Geflügel", "Fleisch")) %>%
+    filter(member != "Spezialkarten") %>% 
+    mutate(label_content = recode(label_content, 
+                                "Fleisch" = "Meat",
+                                "Fisch" = "Fish",
+                                "Vegetarisch" = "Vegetarian",
+                                "Pflanzlich+" = "Vegan",
+                                "Pflanzlich" = "Vegan",
+                                "Hot and Cold" = "Hot&Cold (buffet)",
+                                .missing = "Unknown")) %>% 
+    mutate(condit = recode(condit,
+                         "Basis" = "Base",
+                         "Intervention" = "Intervention")) %>% 
+    mutate(gender = recode(gender,
+                           "F" = "Women",
+                           "M" = "Men"))
+
+#group overall
+sell_tot <- sell_dat %>% 
+  group_by(condit, label_content) %>%
+  summarise(tot_sold = n()) %>% 
+  mutate(pct = tot_sold / sum(tot_sold)) %>% 
+  ungroup() %>% 
+  mutate(sex = "All") 
+
+# group sex and interventin
+sell_sex <- sell_dat %>% 
+    group_by(gender, condit, label_content) %>%
+    summarise(tot_sold = n()) %>% 
+    mutate(pct = tot_sold / sum(tot_sold),
+           sex = gender) %>% 
+    ungroup()
+
+
+# overall stats 
+sell_overall <- bind_rows(sell_tot, sell_sex)
+
+
+#final data set
+dat <- sell_overall %>% 
+  group_by(gender, condit) %>% 
+  summarise(tot_sold = sum(tot_sold)) %>% 
+  ungroup() %>% 
+  mutate(text = paste("n = ", format(tot_sold, big.mark = "'"), sep = "")) %>% 
+  select(-tot_sold) %>% 
+  left_join(sell_overall, .[ , c("sex", "condit", "text")], by = c("gender", "condit")) %>% 
+    mutate(xlab = paste(condit, text, sep = "\n"))
+
+# my colors for the plot
+Cols = c("Unknown" = "black","Vegan" = "#80ccff", "Vegetarian" = "#c5b87c", "Fish"="#6619e6", "Meat" = "#fad60d", "Hot&Cold (buffet)"="#4c4848")
+    
+# detects dark color: for labelling the bars
+dat$label_color <- as.factor(sapply(unlist(Cols)[dat$label_content], 
+                                       function(color) { if (isDark(color)) 'white' else 'black' })) 
+
+    
+# plot
+p <- ggplot(data = dat,
+            aes(x = forcats::fct_rev(xlab),
+                y = pct,
+                fill = factor(label_content,
+                              levels = attributes(Cols)$names),
+                color = label_color)) + 
+    geom_bar(stat = "identity", position = position_stack(), color = NA, width = .7) + # set color NA otherwise error occurs
+    xlab("") +
+    ylab("\nShare in sold dishes\n")+
+    guides(fill = guide_legend("", reverse = T, nrow = 1), 
+           color = "none")+
+    scale_y_origin(labels=scales::percent)+
+    scale_fill_manual(values = Cols,
+                      breaks = attributes(Cols)$name)+
+    scale_color_manual(values = levels(dat$label_color)) +
+    geom_text(aes(label=ifelse(pct > .015, scales::percent(round(pct, 2), accuracy = 1), "")), size = 11, position = position_stack(vjust = 0.52))+
+  coord_flip() +
+  facet_wrap(~factor(sex, levels = c("All", "Women", "Men")), ncol = 1, scales = "free_y", 
+             strip.position = "left", 
+             drop = TRUE) +
+  mytheme_facet 
+
+
+#save as pdf
+ggsave(filename = paste0(wd_plots, "/meal_content_sex_",
+                         format(Sys.Date(), "%y%m%d"),
+                         ".pdf"),
+       p,
+       height = 6.5,
+       width = 18,
+       dpi = 300,
+       device = cairo_pdf)
+
+#export as png
+ggsave(filename = paste0(wd_plots, "/meal_content_sex_",
+                         format(Sys.Date(), "%y%m%d"),
+                         ".png"),
+       p,
+       height = 6.5,
+       width = 18,
+       dpi = 300,
+       device = png)
+
+```
+
+
+
+### not jet working - not necessary?
 
 ```{r another approach for food_type and experiment, eval=FALSE}
 # buffetarians and never meat go together; meat_lovers and alwys_meat too 
@@ -635,7 +910,7 @@ test <- dat %>%
                                   gender == "M" ~ "Men"))
     
 # my colors for the plot
-Cols = c("Unknown" = "black","Vegan" = "#80ccff", "Vegetarian" = "#c5b87c", "Fish"="#6619e6", "Meat" = "#fad60d", "Hot and Cold"="#4c4848")
+Cols = c("Unknown" = "black","Vegan" = "#80ccff", "Vegetarian" = "#c5b87c", "Fish"="#6619e6", "Meat" = "#fad60d", "Hot&Cold (buffet)"="#4c4848")
     
 # detects dark color: for labelling the bars
     pl_$label_color <- as.factor(sapply(unlist(ColsPerCat)[pl_$label_content], 

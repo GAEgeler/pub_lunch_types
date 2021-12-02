@@ -585,7 +585,6 @@ ggsave(filename = paste0(wd_plots, "/food_type_affiliation_",
 ### Food type and intervention
 
 ```{r food_type and experiment}
-#TODO: text color is not working, not sure why - all the same as above!!
 
 # buffetarians and never meat go together; meat_lovers and alwys_meat too 
 buffet_no_meat <- bind_rows(buffet, never_meat)
@@ -605,6 +604,14 @@ sell_dat_2017 %>%
   arrange(desc(pct))
   
 
+#stats influence of interventions
+sell_dat_2017 %>% 
+  filter(ccrs %in% df$ccrs) %>%
+  filter(member != "Spezialkarten") %>% 
+  left_join(., df[, c("ccrs", "food_type")], by = "ccrs") -> df_interv
+
+df_interv %>% 
+  split(.$food_type)
 
 ##plot all-----
 dfList <- list(buffet_no_meat, veg_flex, meat_flex, meat_eat, meat_lovers_alwy_meat)
@@ -666,7 +673,7 @@ for (i in 1:length(dfList)) {
     
   #plot
   p <- ggplot(data = pl,
-            aes(x = xlab,
+            aes(x = forcats::fct_rev(xlab),
                 y = pct,
                 fill = factor(label_content,
                               levels = attributes(Cols)$names),
@@ -682,41 +689,16 @@ for (i in 1:length(dfList)) {
     scale_color_manual(values = levels(pl$label_color)) +
     geom_text(aes(label=ifelse(pct > .015, scales::percent(round(pct, 2), accuracy = 1), "")),
               size = 22*converter,
-              position = position_stack(vjust = 0.52))+
+              position = position_stack(vjust = 0.52),
+              fontface = "bold")+
   coord_flip() +
-  facet_wrap(~gender, ncol = 1, scales = "free_y", 
+  facet_wrap(~factor(gender, levels = c("Women", "Men")), ncol = 1, scales = "free_y", 
              strip.position = "left", 
              drop = TRUE) +
   mytheme_facet 
 
-    
-  #why is this code not working???--------
-  # p <- ggplot(pl, 
-  #             aes(y = pct, 
-  #                 x = xlab,
-  #                 fill = factor(label_content, levels = attributes(Cols)$name)), 
-  #                 color = label_color) + 
-  #   geom_bar(stat = "identity", position = position_stack(reverse = FALSE),
-  #                color = NA) + 
-  #   scale_fill_manual(values = Cols, 
-  #                     breaks = attributes(Cols)$name) +
-  #   coord_flip() +
-  #   facet_wrap(~gender, ncol = 1, scales = "free_y", 
-  #                  strip.position = "left", 
-  #            drop = TRUE) +
-  #    geom_text(aes(label=ifelse(pct < 0.022,"", 
-  #                                  scales::percent(round(pct, 2), accuracy = 1))),
-  #             size = 22 * converter, 
-  #             position = position_stack(vjust = 0.5),
-  #             fontface = "bold") +
-  #   scale_color_manual(values = levels(pl$label_color)) +
-  #   xlab("") +
-  #   ylab("\nMeals sold in percent\n")+
-  #   guides(fill = guide_legend("", nrow = 1, reverse = TRUE),
-  #              color = "none")+
-  #   scale_y_origin(labels=scales::percent_format(accuracy = 1L)) +
-  #   mytheme_facet
-        
+  
+  
     #save plot---------
     ggsave(path = wd_plots, 
            p,
@@ -749,8 +731,6 @@ for (i in 1:length(dfList)) {
 ### total sellings by sex and intervention
 
 ```{r}
-
-##TODO: xlabs is not working
 
 # prepare data
 sell_dat <- sell_dat_2017 %>%
@@ -817,7 +797,7 @@ p <- ggplot(data = dat,
                 fill = factor(label_content,
                               levels = attributes(Cols)$names),
                 color = label_color)) + 
-    geom_bar(stat = "identity", position = position_stack(), color = NA, width = .7) + # set color NA otherwise error occurs
+    geom_bar(stat = "identity", position = position_stack(), color = NA) + # set color NA otherwise error occurs
     xlab("") +
     ylab("\nShare in sold dishes\n")+
     guides(fill = guide_legend("", reverse = T, nrow = 1), 
@@ -853,6 +833,107 @@ ggsave(filename = paste0(wd_plots, "/meal_content_sex_",
        width = 18,
        dpi = 300,
        device = png)
+
+```
+
+
+### Food types by frequency
+
+```{r}
+
+visiter <- reg_visitors %>% 
+    mutate(category=cut(tot_buy, breaks = c(-Inf,11,23,35,47,Inf), 
+                        labels=c("6 to 11 times",
+                                 "12 to 23 times",
+                                 "24 to 35 times",
+                                 "36 to 47 times",
+                                 "48 to 60 times"))) %>%
+    group_by(food_type, category) %>% 
+    summarise(visit_counts=n()) %>% 
+    mutate(pct=visit_counts/sum(visit_counts)) %>% 
+    ungroup()
+
+
+# add annotation into xlab!
+dat <- visiter  %>% 
+    group_by(food_type) %>% 
+    summarise(tot = sum(visit_counts)) %>% 
+    ungroup() %>% 
+    left_join(., visiter, by = "food_type") %>% 
+    mutate(label = paste("n", tot, sep = "="),
+           xlab = paste(food_type, label, sep = "\n")) 
+#set colors for plot
+ColsPerVisit = c(
+"6 to 11 times" = "#99f200",
+"12 to 23 times" =  "#008099",
+"24 to 35 times" = "#fad60d",
+"36 to 47 times" = "#c5b87c",
+"48 to 60 times" = "#262626")
+
+
+dat$label_color <- as.factor(sapply(unlist(ColsPerVisit)[dat$category], 
+                                         function(color)
+                                           { if (isDark(color))
+                                             'white' else 'black' })) 
+#plot data
+p <- ggplot(dat, aes(x = xlab, 
+                     y = pct, 
+                     fill = category, 
+                     color = label_color)) +
+    geom_bar(stat = "identity", colour = NA, 
+             position = position_stack(reverse = TRUE), 
+             width = .7) + 
+    scale_fill_manual(breaks = attributes(ColsPerVisit)$name,
+                      limits = attributes(ColsPerVisit)$name,
+                      values =  ColsPerVisit) +
+    scale_color_manual(values = levels(dat$label_color)) +
+    coord_flip() +
+    guides(fill = guide_legend("", nrow = 1, reverse = FALSE),
+           color = "none") +
+    scale_y_origin(labels=scales::percent_format(accuracy = 1L)) +
+    scale_x_discrete(limits = rev(c("buffet\nn=19",
+                                    "never meat\nn=22", 
+                                    "veg-flexitarian\nn=218",
+                                    "meat-flexitarian\nn=185",
+                                    "meat-eater\nn=323",
+                                    "meat lover\nn=205",
+                                    "always meat\nn=18")),
+                     labels = rev(c("Buffetarian\n (19)",
+                                    "Never Meat\n(22)",
+                                    "Vegetarian Flexitarian\n(218)", 
+                                    "Meat Flexitarian\n(185)", 
+                                    "Meat Eater\n(323)", 
+                                    "Meat Lover\n(205)", 
+                                    "Always Meat\n(18)"))) +
+    xlab("") +
+    ylab("\nVisit frequency during 12 weeks\n") +
+    geom_text(aes(label = ifelse(visiter2$pct<.02,"", 
+                                 scales::percent(round(pct, 2), accuracy = 1L))), 
+              position = position_stack(vjust = .5, reverse = TRUE), 
+              size= 22 * converter,
+              fontface = "bold") +
+    mytheme_facet 
+
+#save as pdf
+ggsave(filename = paste0(wd_plots, "/food_type_frequency_",
+                         format(Sys.Date(), "%y%m%d"),
+                         ".pdf"),
+       p,
+       height = 6.5,
+       width = 18,
+       dpi = 300,
+       device = cairo_pdf)
+
+#export as png
+ggsave(filename = paste0(wd_plots, "/food_type_frequency_",
+                         format(Sys.Date(), "%y%m%d"),
+                         ".png"),
+       p,
+       height = 6.5,
+       width = 18,
+       dpi = 300,
+       device = png)
+
 
 ```
 

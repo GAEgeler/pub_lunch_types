@@ -15,13 +15,13 @@ ColsPerCat =  c("buffet" = "#e64d00",
                 "meat lover" = "#fad60d",
                 "always meat" = "#262626")
 
-ColsPerCat_blind =  c("buffet" = "#D81B60", #should be rather alwys meat
+ColsPerCat_blind =  c("buffet" = "#5D6395", 
                 "never meat" = "#1E88E5",
-                "veg-flexitarian" = "#FFC107", 
+                "veg-flexitarian" = "#FFC107",
                 "meat-flexitarian" = "#004D40",
                 "meat-eater" = "#AAED89" , 
-                "meat lover" = "#F59D28",
-                "always meat" = "#5D6395")
+                "meat lover" =  "#F59D28",
+                "always meat" = "#D81B60") 
 
 #define names for food types
 NamesPerCat = tibble::tibble(food_type = c("buffet", 

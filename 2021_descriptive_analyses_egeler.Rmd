@@ -6,8 +6,6 @@ output: html_document
 ---
 
 ```{r setup and load data, include=FALSE, error=TRUE, message=FALSE}
-# always check to save markdown with the right encoding according the os, in this case utf-8
-# see: https://github.com/rstudio/rstudio/issues/4028
 knitr::opts_chunk$set(echo = TRUE)
 
 #load required packages

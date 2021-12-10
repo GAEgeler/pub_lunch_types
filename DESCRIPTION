@@ -1,0 +1,9 @@
+Package: nova_pub
+Title: Descriptive & statistical analyses for the paper: Food_types
+Version: 0.1
+Authors@R: person("Gian-Andrea", "Egeler", email = "gianandrea.egeler@gmail.com",
+                  role = c("aut", "cre"))
+Description: What the package does (one paragraph), short description how to handle the renv::restore() package!?
+Depends: R (>= 4.0.0)
+License: CC by 4.0
+LazyData: true

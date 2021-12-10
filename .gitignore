@@ -1,0 +1,31 @@
+# ignore all subsequent file formats
+
+*.pdf
+*.csv
+*.html
+*.xlsx
+*.txt
+*.png
+*.log
+*.docx
+*.dotx
+
+# ignore all files ending with
+# do not update selected files
+*.Rbuildignore
+*.Rproj.user
+*.Rhistory
+*.RData
+*.Ruserdata
+.Rproj
+
+
+
+# ignore subequent folders
+/output
+/renv
+
+
+#dont ignore
+!*/renv/activate.R
+.Rproj.user

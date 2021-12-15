@@ -2,28 +2,21 @@
 # My Theme for plotting
 ######
 ###
-# state: november 2021
+# state: dezember 2021
 # author: gian-Andrea egeler
 ###
 
 #define colors for plot-----
 ## lunch types
-ColsPerCat_blind =  c("buffet" = "#5D6395", 
+#kudos: https://davidmathlogic.com/colorblind/
+ColsPerCat_blind =  c("buffet" = "#004D40", 
                 "never meat" = "#1E88E5",
-                "veg-flexitarian" = "#FFC107",
-                "meat-flexitarian" = "#004D40", #change color
-                "meat-eater" = "#AAED89" , 
-                "meat lover" =  "#F59D28", #change color
+                "veg-flexitarian" = "#AAED89",
+                "meat-flexitarian" = "#5D6395",
+                "meat-eater" =  "#c5b87c",#"#FFC107", 
+                "meat lover" = "#F59D28",
                 "always meat" = "#D81B60") 
 
-
-ColsPerCat_blind2 =  c("buffet" = "#3B3C38", 
-                      "never meat" = "#A46851",
-                      "veg-flexitarian" = "#614A96",
-                      "meat-flexitarian" = "#AEBF73",
-                      "meat-eater" = "#B86BB6" , 
-                      "meat lover" =  "#FFC107",
-                      "always meat" = "#34A995") 
 
 ## define names for lunch types
 NamesPerCat = tibble::tibble(lunch_type = c("buffet", 
@@ -34,21 +27,22 @@ NamesPerCat = tibble::tibble(lunch_type = c("buffet",
                                     "meat lover",
                                     "always meat"),
                       plot_names = c("Buffetarian",
-                                     "Never Meat",
-                                     "Vegetarian\nFlexitarian", 
-                                     "Meat\nFlexitarian",
-                                     "Meat Eater" , 
-                                     "Meat Lover",
-                                     "Always Meat"))
+                                     "Never meat",
+                                     "Vegetarian-\nflexitarian", 
+                                     "Meat-\nflexitarian",
+                                     "Meat eater" , 
+                                     "Meat lover",
+                                     "Always meat"))
 
 
 ##colors for meal content
-ColsperContent = c("Unknown" = "#DC749A",
-                   "Vegan" = "#FFC107", 
-                   "Vegetarian" = "#004D40", 
-                   "Fish" = "#8AA198", 
-                   "Meat" = "#57155A", 
-                   "Hot&Cold (buffet)" = "#9B90C0")  
+ColsperContent = c("Unknown" = "black",
+                   "Vegan (authentic)" = "#1E88E5",
+                   "Vegan (substitute)" = "grey90", 
+                   "Vegetarian" = "#AAED89", #"#c5b87c",
+                   "Fish" = "#5D6395", #B86BB6
+                   "Meat" = "#FFC107",
+                   "Hot&Cold (buffet)" = "#004D40")
 
 
 #defining mytheme-------

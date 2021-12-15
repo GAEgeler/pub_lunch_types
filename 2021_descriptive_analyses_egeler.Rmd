@@ -1096,6 +1096,8 @@ ggsave(path = wd_plots,
 ### Treeplot lunch types
 
 ```{r figure s1, eval=FALSE}
+#TODO: change order according to original treeplot: https://novanimal.ch/wp-content/uploads/2020/11/2020_ZHAW_egeler_baur_menuwahl_NOVANIMAL.pdf#page=51
+
 #prepare data
 dat <- reg_visitors %>% 
   group_by(lunch_type) %>% 
@@ -1276,7 +1278,7 @@ ggsave(filename = paste0(wd_plots, "/meal_content_intervention_",
                          ".pdf"),
        p,
        height = 6,
-       width = 17,
+       width = 20,
        dpi = 300,
        device = cairo_pdf) 
 
@@ -1287,7 +1289,7 @@ ggsave(filename = paste0(wd_plots, "/meal_content_intervention_",
                          ".png"),
        p,
        height = 6,
-       width = 17,
+       width = 20,
        dpi = 300,
        device = png) 
 

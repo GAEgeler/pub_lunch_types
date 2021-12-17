@@ -13,7 +13,7 @@ ColsPerCat_blind =  c("buffet" = "#004D40",
                 "never meat" = "#1E88E5",
                 "veg-flexitarian" = "#AAED89",
                 "meat-flexitarian" = "#5D6395",
-                "meat-eater" =  "#c5b87c",#"#FFC107", 
+                "meat-eater" =  "#c5b87c",
                 "meat lover" = "#F59D28",
                 "always meat" = "#D81B60") 
 
@@ -36,11 +36,12 @@ NamesPerCat = tibble::tibble(lunch_type = c("buffet",
 
 
 ##colors for meal content
+#attention defines also the order of the legend
 ColsperContent = c("Unknown" = "black",
-                   "Vegan (authentic)" = "#1E88E5",
                    "Vegan (substitute)" = "grey90", 
-                   "Vegetarian" = "#AAED89", #"#c5b87c",
-                   "Fish" = "#5D6395", #B86BB6
+                   "Vegan (authentic)" = "#1E88E5",
+                   "Vegetarian" = "#AAED89", 
+                   "Fish" = "#5D6395", 
                    "Meat" = "#FFC107",
                    "Hot&Cold (buffet)" = "#004D40")
 

@@ -1095,8 +1095,10 @@ ggsave(path = wd_plots,
 
 ### Treeplot lunch types
 
-```{r figure s1, eval=FALSE}
+```{r figure s2, eval=FALSE}
 #TODO: change order according to original treeplot: https://novanimal.ch/wp-content/uploads/2020/11/2020_ZHAW_egeler_baur_menuwahl_NOVANIMAL.pdf#page=51
+
+#TODO: elsewhise take the old code from github
 
 #prepare data
 dat <- reg_visitors %>% 
@@ -1181,7 +1183,7 @@ ggsave(filename = paste0(wd_plots, "/map_lunch_type_",
 
 ### total sellings by intervention
 
-```{r figure s2}
+```{r figure s1}
 #prepare data
 sell_dat <- sell_agg_dat_2017 %>%
     mutate(label_content = stringr::str_replace(label_content,
@@ -1190,8 +1192,8 @@ sell_dat <- sell_agg_dat_2017 %>%
                                 "Fleisch" = "Meat",
                                 "Fisch" = "Fish",
                                 "Vegetarisch" = "Vegetarian",
-                                "Pflanzlich+" = "Vegan",
-                                "Pflanzlich" = "Vegan",
+                                "Pflanzlich+" = "Vegan (authentic)",
+                                "Pflanzlich" = "Vegan (substitute)",
                                 "Hot and Cold" = "Hot&Cold (buffet)",
                                 .missing = "Unknown")) %>% 
     mutate(condit = recode(condit,

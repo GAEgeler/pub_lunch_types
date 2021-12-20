@@ -549,7 +549,7 @@ ggsave(filename = paste0(wd_plots, "/lunch_type_affiliation_",
 
 ### lunch type and intervention
 
-#### effect intervention: stats
+#### response to intervention: stats
 
 ```{r stats effect intervention}
 
@@ -733,9 +733,9 @@ df_tot[df_tot$condit == "Intervention" & df_tot$type == "meat" & df_tot$label_co
 
 ```
 
-####  stats effect vegan dishes
+####  stats response to vegan dishes
 
-```{r effect vegan dishes}
+```{r response to vegan dishes}
 
 # buffetarians and never meat go together; meat_lovers and alwys_meat too 
 buffet_no_meat <- bind_rows(buffet, never_meat)

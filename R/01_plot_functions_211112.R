@@ -2,7 +2,7 @@
 
 
 # detects dark color: for labelling the bars
-# source: https://stackoverflow.com/questions/49437263/is-there-a-is-light-or-is-dark-color-function-in-r
+# source & kudos: https://stackoverflow.com/questions/49437263/is-there-a-is-light-or-is-dark-color-function-in-r
 
 # state: mai 2018
 

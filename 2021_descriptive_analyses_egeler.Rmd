@@ -8,8 +8,11 @@ output: html_document
 ```{r setup and load data, include=FALSE, error=TRUE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-#load required packages
+#check for required packages
 renv::restore()
+
+#load packages
+pacman::p_load(dplyr, forcats, readr, ggplot2, treemap)
 
 
 #load config file
@@ -1091,91 +1094,69 @@ ggsave(path = wd_plots,
 
 
 
-## Appendix
+## Appendix (supplementary material)
 
 ### Treeplot lunch types
 
-```{r figure s2, eval=FALSE}
-#TODO: change order according to original treeplot: https://novanimal.ch/wp-content/uploads/2020/11/2020_ZHAW_egeler_baur_menuwahl_NOVANIMAL.pdf#page=51
+```{r}
 
-#TODO: elsewhise take the old code from github
+##Attention: original plot from here (htps://novanimal.ch/wp-content/uploads/2020/11/2020_ZHAW_egeler_baur_menuwahl_NOVANIMAL.pdf#page=51) could not be reproduced
 
-#prepare data
+
+# prepare data
 dat <- reg_visitors %>% 
-  group_by(lunch_type) %>% 
-  summarise(count = n()) %>% 
-  mutate(pct = count/sum(count)) %>% 
-  ungroup() %>% 
-  mutate(info_cluster = recode(lunch_type, 
+    group_by(lunch_type) %>% 
+    summarise(count = n()) %>% 
+    mutate(pct = count/sum(count)) %>% 
+    ungroup() %>% 
+    mutate(info_type = recode(lunch_type, 
                              "buffet" = "",
                              "never meat" = "",
                              "veg-flexitarian" = "Meat share: < 1/4", 
-                             "meat-flexitarian" = "Meat share: \u2265 1/4 bis < 1/2",
-                             "meat-eater" = "Meat share: \u2265 1/2 bis < 3/4", 
+                             "meat-flexitarian" = "Meat share: \u2265 1/4 to < 1/2",
+                             "meat-eater" = "Meat share: \u2265 1/2 to < 3/4", 
                              "meat lover" = "Meat share: \u2265 3/4",
                              "always meat" = "")) %>% # add information for splitting clusters
-  mutate(lunch_type2 = recode(lunch_type, 
+    mutate(lunch_type2 = recode(lunch_type, 
                                  "buffet" = "Buffetarians",
-                                 "never meat" = "Never Meat", 
-                                 "veg-flexitarian" = "Vegetarian Flexitarian", 
-                                 "meat-flexitarian" = "Meat Flexitarian",
-                                 "meat-eater" = "Meat Eater", 
-                                 "meat lover" = "Meat Lover",
-                                 "always meat" = "Always Meat")) %>%# rename clusters
-  mutate(label_ = paste(lunch_type2, paste(round(pct*100, 0), "%", sep = " "),
-                          sep = "\n"),
-           label = paste(label_, info_cluster, sep = "\n")) %>% 
-  mutate(col = recode(lunch_type, 
+                                 "never meat" = "Never meat", 
+                                 "veg-flexitarian" = "Vegetarian-flexitarian", 
+                                 "meat-flexitarian" = "Meat-flexitarian",
+                                 "meat-eater" = "Meat eater", 
+                                 "meat lover" = "Meat lover",
+                                 "always meat" = "Always meat")) %>%# rename clusters
+    mutate(label_ = paste(lunch_type2, paste(round(pct*100, 1), "%", sep = " "), sep = "\n"),
+           label = paste(label_, info_type, sep = "\n")) %>% 
+    mutate(color = recode(lunch_type, 
                       "buffet" = "#5D6395", 
                       "never meat" = "#1E88E5",
                       "veg-flexitarian" = "#FFC107",
                       "meat-flexitarian" = "#004D40",
                       "meat-eater" = "#AAED89" , 
                       "meat lover" =  "#F59D28",
-                      "always meat" = "#D81B60"))
+                      "always meat" = "#D81B60")) # add color
 
 
-
-
-#add color for label:not working
-dat$label_color <- as.factor(sapply(unlist(ColsPerCat_blind)[dat$lunch_type], 
-                                         function(color) { if (isDark(color))
-                                           'white' else 'black' })) 
-#plot
-p <- ggplot(data = dat, aes(area = count, 
-                fill = label, 
-                label = label)) +
-                # color = label_color)) +
-  treemapify::geom_treemap(color = black)+ #, layout = "fixed") + # use layout = fixed for another order, however is not nice
-  treemapify::geom_treemap_text(colour = dat$label_color,
-                    # place = "centre", 
-                    size = 22,
-                    fontface = "bold") +
-  guides(fill = "none",
-         label = "none") + 
-  scale_fill_manual(values = ColsPerCat_blind)
-
-
-#export as pdf
-ggsave(filename = paste0(wd_plots, "/map_lunch_type_",
+# open pdf device for saving plot
+cairo_pdf(filename = paste0(wd_plots, "/map_lunch_type_",
                          format(Sys.Date(), "%y%m%d"),
                          ".pdf"),
-       p,
-       height = 16,
-       width = 18,
-       dpi = 300,
-       device = cairo_pdf) 
+          width = 20, height = 20)
 
-#export as png
-ggsave(filename = paste0(wd_plots, "/map_lunch_type_",
-                         format(Sys.Date(), "%y%m%d"),
-                         ".png"),
-       p,
-       height = 16,
-       width = 18,
-       dpi = 300,
-       device = png)
 
+# order is different than in published one
+treemap::treemap(dat, #Your data frame object
+        index = "label",  #A list of your categorical variables
+        vSize = "count",  #This is your quantitative variable
+        vColor = "color", # with color, the order isnt taken into acount anymore
+        type = "color",
+        title = "", # Change the name of the plot
+        # sortID = "count", # somehow not working
+        algorithm = "pivotSize",
+        sortID = "test2",
+        fontfamily.labels = "sans")
+
+dev.off() # close device
 
 ```
 
